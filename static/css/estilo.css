@@ -75,6 +75,20 @@ h3 { font-size: 1.05rem; margin: 0 0 .5rem; }
 }
 .grade-cartoes { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
 .cartao-estreito { max-width: 480px; margin: 0 auto; }
+.grade-cartoes > .vazio { grid-column: 1 / -1; }
+
+.cartao-evento { display: flex; flex-direction: column; gap: .35rem; border-top: 4px solid var(--verde-400); }
+.cartao-evento h3 { font-size: 1.15rem; margin: .25rem 0 0; }
+.cartao-evento p { margin: 0; }
+.cartao-evento .acoes { margin-top: auto; padding-top: .75rem; }
+.periodo { font-weight: 600; color: var(--verde-700); }
+
+/* Busca */
+.busca { display: flex; gap: .5rem; flex: 1; max-width: 380px; min-width: 240px; }
+.busca input {
+    flex: 1; padding: .5rem .75rem; border: 1px solid var(--borda); border-radius: 8px; font: inherit;
+}
+.busca input:focus { outline: 2px solid var(--verde-400); border-color: var(--verde-400); }
 
 /* Botões */
 .botao, button {
@@ -137,6 +151,6 @@ form.em-linha { display: inline; margin: 0; }
 }
 
 @media (max-width: 640px) {
-    .nav-usuario { margin-left: 0; width: 100%; }
+    .nav { flex-basis: 100%; }
     h1 { font-size: 1.45rem; }
 }

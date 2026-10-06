@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Eventos · Eventos do Campus{% endblock %}
+
+{% block conteudo %}
+<div class="cabecalho-pagina">
+    <div>
+        <h1>Eventos</h1>
+        <p class="texto-suave">Programação aberta a todos. Para se inscrever, entre com sua conta.</p>
+    </div>
+</div>
+
+<div class="grade-cartoes">
+    {% for evento in eventos %}
+        <article class="cartao cartao-evento">
+            <div class="cartao-evento-topo">
+                {% if evento.inscricoes_abertas %}
+                    <span class="etiqueta">Inscrições abertas</span>
+                {% else %}
+                    <span class="etiqueta etiqueta-perigo">Inscrições fechadas</span>
+                {% endif %}
+            </div>
+            <h3>{{ evento.nome }}</h3>
+            <p class="periodo">
+                {% if evento.data_inicio == evento.data_fim %}
+                    {{ evento.data_inicio|date:"d/m/Y" }}
+                {% else %}
+                    {{ evento.data_inicio|date:"d/m/Y" }} a {{ evento.data_fim|date:"d/m/Y" }}
+                {% endif %}
+            </p>
+            <p class="texto-suave">{{ evento.descricao|truncatewords:25 }}</p>
+        </article>
+    {% empty %}
+        <div class="vazio">Nenhum evento cadastrado ainda.</div>
+    {% endfor %}
+</div>
+{% endblock %}
