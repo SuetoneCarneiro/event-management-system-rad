@@ -1,0 +1,47 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block titulo %}Eventos do Campus{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/estilo.css' %}">
+</head>
+<body>
+    <header class="topo">
+        <div class="topo-interno">
+            <a class="marca" href="{% url 'eventos:lista' %}">Eventos do Campus</a>
+            <nav class="nav">
+                <a href="{% url 'eventos:lista' %}">Eventos</a>
+                {% block nav_extra %}{% endblock %}
+                <div class="nav-usuario">
+                    {% if user.is_authenticated %}
+                        <span>Olá, {{ user.first_name|default:user.username }}</span>
+                        {# Logout altera o estado (encerra a sessão), então é POST. #}
+                        <form class="em-linha" method="post" action="{% url 'logout' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="botao-link">Sair</button>
+                        </form>
+                    {% else %}
+                        <a href="{% url 'login' %}">Entrar</a>
+                        <a href="{% url 'cadastro' %}">Cadastrar</a>
+                    {% endif %}
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="conteudo">
+        {% if messages %}
+            <ul class="mensagens">
+                {% for message in messages %}
+                    <li class="mensagem {{ message.tags }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        {% block conteudo %}{% endblock %}
+    </main>
+
+    <footer class="rodape">Eventos do Campus · IFPB</footer>
+</body>
+</html>
