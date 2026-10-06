@@ -22,17 +22,28 @@
                 {% endif %}
             </p>
         </div>
+        {% if eh_organizador %}
+            <div class="acoes">
+                <a class="botao botao-secundario" href="{% url 'eventos:editar' evento.pk %}">Editar evento</a>
+                <a class="botao botao-perigo" href="{% url 'eventos:excluir' evento.pk %}">Excluir</a>
+            </div>
+        {% endif %}
     </div>
     <p class="descricao">{{ evento.descricao|linebreaksbr }}</p>
 </section>
 
-<h2>Programação</h2>
+<div class="cabecalho-pagina cabecalho-secao">
+    <h2>Programação</h2>
+    {% if eh_organizador %}
+        <a class="botao" href="{% url 'eventos:atividade_criar' evento.pk %}">+ Nova atividade</a>
+    {% endif %}
+</div>
 
 {% regroup atividades by dia as dias %}
 {% for dia in dias %}
     <h3 class="dia">{{ dia.grouper|date:"l, d/m/Y"|capfirst }}</h3>
     <div class="tabela-rolavel cartao sem-padding">
-        <table class="tabela tabela-programacao">
+        <table class="tabela tabela-programacao{% if eh_organizador %} com-acoes{% endif %}">
             <thead>
                 <tr>
                     <th>Horário</th>
@@ -40,6 +51,7 @@
                     <th>Responsável</th>
                     <th>Sala</th>
                     <th>Vagas</th>
+                    {% if eh_organizador %}<th>Ações</th>{% endif %}
                 </tr>
             </thead>
             <tbody>
@@ -60,6 +72,14 @@
                                 <span class="etiqueta etiqueta-perigo">Lotada</span>
                             {% endif %}
                         </td>
+                        {% if eh_organizador %}
+                            <td>
+                                <div class="acoes">
+                                    <a class="botao botao-secundario botao-pequeno" href="{% url 'eventos:atividade_editar' atividade.pk %}">Editar</a>
+                                    <a class="botao botao-perigo botao-pequeno" href="{% url 'eventos:atividade_excluir' atividade.pk %}">Excluir</a>
+                                </div>
+                            </td>
+                        {% endif %}
                     </tr>
                 {% endfor %}
             </tbody>

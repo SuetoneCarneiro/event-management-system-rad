@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block titulo %}{% if object %}Editar evento{% else %}Novo evento{% endif %} · Eventos do Campus{% endblock %}
+
+{% block conteudo %}
+<p>
+    {% if object %}
+        <a href="{% url 'eventos:detalhe' object.pk %}">← Voltar para {{ object.nome }}</a>
+    {% else %}
+        <a href="{% url 'eventos:lista' %}">← Todos os eventos</a>
+    {% endif %}
+</p>
+
+<div class="cartao cartao-formulario">
+    <h1>{% if object %}Editar evento{% else %}Novo evento{% endif %}</h1>
+    <p class="texto-suave">Você será registrado como organizador deste evento.</p>
+
+    <form method="post" class="formulario" novalidate>
+        {% csrf_token %}
+        {{ form.as_div }}
+        <div class="acoes">
+            <button type="submit">Salvar</button>
+            <a class="botao botao-secundario" href="{% if object %}{% url 'eventos:detalhe' object.pk %}{% else %}{% url 'eventos:lista' %}{% endif %}">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

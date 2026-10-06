@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block titulo %}{% if object %}Editar atividade{% else %}Nova atividade{% endif %} · Eventos do Campus{% endblock %}
+
+{% block conteudo %}
+<p><a href="{% url 'eventos:detalhe' evento.pk %}">← Voltar para {{ evento.nome }}</a></p>
+
+<div class="cartao cartao-formulario">
+    <h1>{% if object %}Editar atividade{% else %}Nova atividade{% endif %}</h1>
+    <p class="texto-suave">{{ evento.nome }}</p>
+
+    <form method="post" class="formulario" novalidate>
+        {% csrf_token %}
+        {{ form.as_div }}
+        <div class="acoes">
+            <button type="submit">Salvar</button>
+            <a class="botao botao-secundario" href="{% url 'eventos:detalhe' evento.pk %}">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

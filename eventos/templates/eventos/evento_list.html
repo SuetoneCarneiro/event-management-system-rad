@@ -8,6 +8,9 @@
         <h1>Eventos</h1>
         <p class="texto-suave">Programação aberta a todos. Para se inscrever, entre com sua conta.</p>
     </div>
+    {% if perms.eventos.add_evento %}
+        <a class="botao" href="{% url 'eventos:criar' %}">+ Novo evento</a>
+    {% endif %}
 </div>
 
 <div class="grade-cartoes">

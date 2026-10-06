@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Excluir atividade · Eventos do Campus{% endblock %}
+
+{% block conteudo %}
+<div class="cartao cartao-formulario cartao-perigo">
+    <h1>Excluir atividade</h1>
+    <p>Tem certeza de que deseja excluir <strong>{{ object.titulo }}</strong>, de {{ evento.nome }}?</p>
+    <p class="texto-suave">
+        As {{ object.inscricoes.count }} inscrição(ões) nesta atividade também serão excluídas.
+        Esta ação não pode ser desfeita.
+    </p>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="acoes">
+            <button type="submit" class="botao-perigo">Excluir atividade</button>
+            <a class="botao botao-secundario" href="{% url 'eventos:detalhe' evento.pk %}">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

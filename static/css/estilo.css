@@ -95,6 +95,20 @@ h3.dia { margin: 1.5rem 0 .5rem; color: var(--verde-700); }
 .tabela-programacao th:nth-child(3) { width: 20%; }
 .tabela-programacao th:nth-child(4) { width: 17%; }
 .tabela-programacao th:nth-child(5) { width: 15%; }
+.tabela-programacao.com-acoes { min-width: 880px; }
+.tabela-programacao.com-acoes th:nth-child(1) { width: 12%; }
+.tabela-programacao.com-acoes th:nth-child(2) { width: 25%; }
+.tabela-programacao.com-acoes th:nth-child(3) { width: 17%; }
+.tabela-programacao.com-acoes th:nth-child(4) { width: 15%; }
+.tabela-programacao.com-acoes th:nth-child(5) { width: 12%; }
+.tabela-programacao.com-acoes th:nth-child(6) { width: 19%; }
+.tabela .acoes { gap: .35rem; }
+.cabecalho-secao { margin: 2rem 0 0; align-items: center; }
+.cabecalho-secao h2 { margin: 0; }
+
+/* Formulários em cartão */
+.cartao-formulario { max-width: 680px; }
+.cartao-perigo { border-top: 4px solid var(--perigo); }
 .cartao.sem-padding { padding: 0; overflow: hidden; }
 .horario { font-weight: 700; color: var(--verde-800); white-space: nowrap; }
 .etiqueta-neutra { background: var(--verde-50); color: var(--texto-suave); border: 1px solid var(--borda); font-weight: 500; margin-top: .25rem; }
