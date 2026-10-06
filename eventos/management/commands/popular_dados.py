@@ -10,13 +10,13 @@ from eventos.signals import GRUPO_ORGANIZADORES
 
 SENHA_PADRAO = 'eventos2026'
 
-# (username, nome, sobrenome, papel)
+# (username, senha, nome, sobrenome, papel)
 CONTAS = [
-    ('admin', 'Admin', '', 'superusuario'),        # conta 1: cadastra salas pelo Admin
-    ('ana', 'Ana', 'Organizadora', 'organizador'),  # conta 2: cria eventos e atividades
-    ('bruno', 'Bruno', 'Organizador', 'organizador'),  # conta 3: não pode alterar o que é da Ana
-    ('carla', 'Carla', 'Participante', 'participante'),  # conta 4: inscreve-se
-    ('diego', 'Diego', 'Participante', 'participante'),  # conta 5: ocupa a última vaga
+    ('admin', 'admin', 'Admin', '', 'superusuario'),              # conta 1: cadastra salas pelo Admin
+    ('ana', SENHA_PADRAO, 'Ana', 'Organizadora', 'organizador'),    # conta 2: cria eventos e atividades
+    ('bruno', SENHA_PADRAO, 'Bruno', 'Organizador', 'organizador'),  # conta 3: não altera o que é da Ana
+    ('carla', SENHA_PADRAO, 'Carla', 'Participante', 'participante'),  # conta 4: inscreve-se
+    ('diego', SENHA_PADRAO, 'Diego', 'Participante', 'participante'),  # conta 5: ocupa a última vaga
 ]
 
 
@@ -55,12 +55,12 @@ class Command(BaseCommand):
     def criar_contas(self):
         organizadores = Group.objects.get(name=GRUPO_ORGANIZADORES)
         usuarios = {}
-        for username, nome, sobrenome, papel in CONTAS:
+        for username, senha, nome, sobrenome, papel in CONTAS:
             usuario, criado = User.objects.get_or_create(
                 username=username, defaults={'first_name': nome, 'last_name': sobrenome},
             )
             if criado:
-                usuario.set_password(SENHA_PADRAO)  # nunca atribuir direto em usuario.password
+                usuario.set_password(senha)  # nunca atribuir direto em usuario.password
                 if papel == 'superusuario':
                     usuario.is_staff = usuario.is_superuser = True
                 usuario.save()
