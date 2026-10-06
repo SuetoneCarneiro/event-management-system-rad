@@ -4,6 +4,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMix
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, transaction
+from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
@@ -145,6 +146,31 @@ class EventoDeleteView(LoginRequiredMixin, PermissionRequiredMixin, EventoDoOrga
     permission_required = 'eventos.delete_evento'
     success_url = reverse_lazy('eventos:meus_eventos')
     success_message = 'Evento excluído.'
+
+
+class PainelEventoView(LoginRequiredMixin, PermissionRequiredMixin, EventoDoOrganizadorMixin, DetailView):
+    """RF9: inscritos por atividade, só para o organizador do evento."""
+    permission_required = 'eventos.view_evento'
+    template_name = 'eventos/painel.html'
+    context_object_name = 'evento'
+
+    def get_context_data(self, **kwargs):
+        contexto = super().get_context_data(**kwargs)
+        # prefetch_related busca os inscritos de TODAS as atividades numa consulta só,
+        # em vez de uma consulta por atividade no template.
+        inscritos = (
+            InscricaoAtividade.objects
+            .select_related('inscricao_evento__participante')
+            .order_by('data_hora_inscricao')
+        )
+        contexto['atividades'] = (
+            self.object.atividades
+            .com_vagas()
+            .select_related('sala')
+            .prefetch_related(Prefetch('inscricoes', queryset=inscritos))
+        )
+        contexto['total_inscritos_evento'] = self.object.inscricoes.count()
+        return contexto
 
 
 class AtividadeCreateView(LoginRequiredMixin, PermissionRequiredMixin, OrganizadorDoEventoMixin,

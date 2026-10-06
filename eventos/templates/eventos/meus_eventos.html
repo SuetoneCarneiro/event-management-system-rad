@@ -33,6 +33,7 @@
         <div class="acoes">
             <a class="botao botao-secundario botao-pequeno" href="{% url 'eventos:detalhe' evento.pk %}">Ver programação</a>
             <a class="botao botao-secundario botao-pequeno" href="{% url 'eventos:editar' evento.pk %}">Editar</a>
+            <a class="botao botao-secundario botao-pequeno" href="{% url 'eventos:painel' evento.pk %}">Inscritos</a>
         </div>
     </article>
     {% empty %}

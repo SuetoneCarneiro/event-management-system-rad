@@ -13,6 +13,7 @@ urlpatterns = [
     path('eventos/<int:pk>/', views.EventoDetailView.as_view(), name='detalhe'),
     path('eventos/<int:pk>/editar/', views.EventoUpdateView.as_view(), name='editar'),
     path('eventos/<int:pk>/excluir/', views.EventoDeleteView.as_view(), name='excluir'),
+    path('eventos/<int:pk>/painel/', views.PainelEventoView.as_view(), name='painel'),
     path('eventos/<int:evento_pk>/atividades/nova/', views.AtividadeCreateView.as_view(), name='atividade_criar'),
     path('atividades/<int:pk>/editar/', views.AtividadeUpdateView.as_view(), name='atividade_editar'),
     path('atividades/<int:pk>/excluir/', views.AtividadeDeleteView.as_view(), name='atividade_excluir'),

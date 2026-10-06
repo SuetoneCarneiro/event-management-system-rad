@@ -192,3 +192,16 @@ form.em-linha { display: inline; margin: 0; }
 
 /* Agenda */
 .tabela-agenda { min-width: 720px; }
+
+/* Painel do organizador */
+.resumo { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.numero { display: flex; flex-direction: column; border-left: 4px solid var(--verde-400); }
+.numero strong { font-size: 2rem; color: var(--verde-800); line-height: 1.1; }
+.numero span { color: var(--texto-suave); }
+.painel-atividade { margin-bottom: 1rem; padding: 0; overflow: hidden; }
+.painel-atividade-topo {
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: .75rem;
+    padding: 1rem 1.25rem; border-bottom: 1px solid var(--borda);
+}
+.painel-atividade-topo h3, .painel-atividade-topo p { margin: 0; }
+.sem-inscritos { margin: 0; padding: 1rem 1.25rem; }

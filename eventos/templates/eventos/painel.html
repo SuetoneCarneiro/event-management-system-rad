@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Painel · {{ evento.nome }} · Eventos do Campus{% endblock %}
+
+{% block conteudo %}
+<p><a href="{% url 'eventos:detalhe' evento.pk %}">← Voltar para a programação</a></p>
+
+<div class="cabecalho-pagina">
+    <div>
+        <h1>Painel de inscritos</h1>
+        <p class="texto-suave">{{ evento.nome }}</p>
+    </div>
+</div>
+
+<div class="resumo">
+    <div class="cartao numero">
+        <strong>{{ total_inscritos_evento }}</strong>
+        <span>inscrito(s) no evento</span>
+    </div>
+    <div class="cartao numero">
+        <strong>{{ atividades|length }}</strong>
+        <span>atividade(s)</span>
+    </div>
+</div>
+
+{% for atividade in atividades %}
+    <section class="cartao painel-atividade">
+        <div class="painel-atividade-topo">
+            <div>
+                <h3>{{ atividade.titulo }}</h3>
+                <p class="texto-suave">
+                    {{ atividade.data_hora_inicio|date:"d/m/Y" }},
+                    {{ atividade.data_hora_inicio|date:"H:i" }}–{{ atividade.data_hora_fim|date:"H:i" }}
+                    · {{ atividade.sala.nome }} (Bloco {{ atividade.sala.bloco }})
+                </p>
+            </div>
+            <div class="acoes">
+                <span class="etiqueta">{{ atividade.total_inscritos }} inscrito(s)</span>
+                {% if atividade.vagas_restantes > 0 %}
+                    <span class="etiqueta etiqueta-neutra">{{ atividade.vagas_restantes }} de {{ atividade.sala.capacidade }} vaga(s) restante(s)</span>
+                {% else %}
+                    <span class="etiqueta etiqueta-perigo">Lotada</span>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if atividade.inscricoes.all %}
+            <div class="tabela-rolavel">
+                <table class="tabela">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Participante</th>
+                            <th>Usuário</th>
+                            <th>E-mail</th>
+                            <th>Inscrito em</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inscricao in atividade.inscricoes.all %}
+                            {% with participante=inscricao.inscricao_evento.participante %}
+                                <tr>
+                                    <td class="texto-suave">{{ forloop.counter }}</td>
+                                    <td>{{ participante.get_full_name|default:participante.username }}</td>
+                                    <td>{{ participante.username }}</td>
+                                    <td>{{ participante.email|default:"—" }}</td>
+                                    <td>{{ inscricao.data_hora_inscricao|date:"d/m/Y H:i" }}</td>
+                                </tr>
+                            {% endwith %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="texto-suave sem-inscritos">Nenhum inscrito ainda.</p>
+        {% endif %}
+    </section>
+{% empty %}
+    <div class="vazio">Este evento ainda não tem atividades.</div>
+{% endfor %}
+{% endblock %}

@@ -24,6 +24,7 @@
         </div>
         {% if eh_organizador %}
             <div class="acoes">
+                <a class="botao" href="{% url 'eventos:painel' evento.pk %}">Painel de inscritos</a>
                 <a class="botao botao-secundario" href="{% url 'eventos:editar' evento.pk %}">Editar evento</a>
                 <a class="botao botao-perigo" href="{% url 'eventos:excluir' evento.pk %}">Excluir</a>
             </div>
