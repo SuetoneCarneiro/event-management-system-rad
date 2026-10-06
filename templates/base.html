@@ -12,6 +12,9 @@
             <a class="marca" href="{% url 'eventos:lista' %}">Eventos do Campus</a>
             <nav class="nav">
                 <a href="{% url 'eventos:lista' %}">Eventos</a>
+                {% if perms.eventos.add_evento %}
+                    <a href="{% url 'eventos:meus_eventos' %}">Meus eventos</a>
+                {% endif %}
                 {% block nav_extra %}{% endblock %}
                 <div class="nav-usuario">
                     {% if user.is_authenticated %}

@@ -16,4 +16,5 @@ urlpatterns = [
     path('eventos/<int:evento_pk>/atividades/nova/', views.AtividadeCreateView.as_view(), name='atividade_criar'),
     path('atividades/<int:pk>/editar/', views.AtividadeUpdateView.as_view(), name='atividade_editar'),
     path('atividades/<int:pk>/excluir/', views.AtividadeDeleteView.as_view(), name='atividade_excluir'),
+    path('meus-eventos/', views.meus_eventos, name='meus_eventos'),
 ]

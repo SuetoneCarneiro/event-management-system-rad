@@ -1,6 +1,7 @@
+from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
 from django.contrib.messages.views import SuccessMessageMixin
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.functional import cached_property
@@ -32,6 +33,14 @@ class EventoDetailView(DetailView):
         contexto['atividades'] = atividades
         contexto['eh_organizador'] = self.object.organizador_id == self.request.user.id
         return contexto
+
+
+# Fazendo 1 com função e decoradores
+@login_required
+@permission_required('eventos.add_evento', raise_exception=True)
+def meus_eventos(request):
+    eventos = Evento.objects.filter(organizador=request.user)
+    return render(request, 'eventos/meus_eventos.html', {'eventos': eventos})
 
 
 # --- Organizador: autorização em três camadas ---
@@ -92,7 +101,7 @@ class EventoUpdateView(LoginRequiredMixin, PermissionRequiredMixin, EventoDoOrga
 class EventoDeleteView(LoginRequiredMixin, PermissionRequiredMixin, EventoDoOrganizadorMixin,
                        SuccessMessageMixin, DeleteView):
     permission_required = 'eventos.delete_evento'
-    success_url = reverse_lazy('eventos:lista')
+    success_url = reverse_lazy('eventos:meus_eventos')
     success_message = 'Evento excluído.'
 
 
