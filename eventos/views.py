@@ -70,6 +70,21 @@ def meus_eventos(request):
     return render(request, 'eventos/meus_eventos.html', {'eventos': eventos})
 
 
+class AgendaView(LoginRequiredMixin, ListView):
+    """RF8: atividades do usuário logado, de todos os eventos, em ordem cronológica."""
+    template_name = 'eventos/agenda.html'
+    context_object_name = 'inscricoes'
+
+    def get_queryset(self):
+        # get_queryset (e não o atributo queryset) porque o filtro depende de quem acessa.
+        return (
+            InscricaoAtividade.objects
+            .filter(inscricao_evento__participante=self.request.user)
+            .select_related('atividade__evento', 'atividade__sala')
+            .order_by('atividade__data_hora_inicio')
+        )
+
+
 # --- Organizador: autorização em três camadas ---
 # 1. LoginRequiredMixin       -> anônimo vai para o login
 # 2. PermissionRequiredMixin  -> precisa ser organizador (grupo com a permissão)

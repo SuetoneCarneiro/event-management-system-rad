@@ -17,6 +17,7 @@ urlpatterns = [
     path('atividades/<int:pk>/editar/', views.AtividadeUpdateView.as_view(), name='atividade_editar'),
     path('atividades/<int:pk>/excluir/', views.AtividadeDeleteView.as_view(), name='atividade_excluir'),
     path('meus-eventos/', views.meus_eventos, name='meus_eventos'),
+    path('agenda/', views.AgendaView.as_view(), name='agenda'),
     path('eventos/<int:pk>/inscrever/', views.inscrever_evento, name='inscrever_evento'),
     path('inscricoes/<int:pk>/cancelar/', views.cancelar_inscricao_evento, name='cancelar_inscricao_evento'),
     path('atividades/<int:pk>/inscrever/', views.inscrever_atividade, name='inscrever_atividade'),

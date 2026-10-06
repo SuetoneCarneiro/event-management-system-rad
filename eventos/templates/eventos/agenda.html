@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Minha agenda · Eventos do Campus{% endblock %}
+
+{% block conteudo %}
+<div class="cabecalho-pagina">
+    <div>
+        <h1>Minha agenda</h1>
+        <p class="texto-suave">Atividades em que você está inscrito, de todos os eventos, em ordem cronológica.</p>
+    </div>
+</div>
+
+{% if inscricoes %}
+    <div class="tabela-rolavel cartao sem-padding">
+        <table class="tabela tabela-agenda">
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Horário</th>
+                    <th>Evento</th>
+                    <th>Atividade</th>
+                    <th>Sala</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inscricao in inscricoes %}
+                    {% with atividade=inscricao.atividade %}
+                        <tr>
+                            <td class="horario">{{ atividade.data_hora_inicio|date:"d/m/Y" }}<br>
+                                <span class="texto-suave">{{ atividade.data_hora_inicio|date:"l"|capfirst }}</span></td>
+                            <td class="horario">{{ atividade.data_hora_inicio|date:"H:i" }}–{{ atividade.data_hora_fim|date:"H:i" }}</td>
+                            <td><a href="{% url 'eventos:detalhe' atividade.evento_id %}">{{ atividade.evento.nome }}</a></td>
+                            <td>
+                                <strong>{{ atividade.titulo }}</strong><br>
+                                <span class="etiqueta etiqueta-neutra">{{ atividade.get_tipo_display }}</span>
+                            </td>
+                            <td>{{ atividade.sala.nome }}<br><span class="texto-suave">Bloco {{ atividade.sala.bloco }}</span></td>
+                            <td>
+                                <form class="em-linha" method="post" action="{% url 'eventos:cancelar_inscricao_atividade' inscricao.pk %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.path }}">
+                                    <button type="submit" class="botao-perigo botao-pequeno">Cancelar</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endwith %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="vazio">
+        Você ainda não se inscreveu em nenhuma atividade.
+        <a href="{% url 'eventos:lista' %}">Veja os eventos</a>.
+    </div>
+{% endif %}
+{% endblock %}

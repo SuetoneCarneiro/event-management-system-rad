@@ -189,3 +189,6 @@ form.em-linha { display: inline; margin: 0; }
     .nav { flex-basis: 100%; }
     h1 { font-size: 1.45rem; }
 }
+
+/* Agenda */
+.tabela-agenda { min-width: 720px; }
