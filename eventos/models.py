@@ -122,6 +122,10 @@ class Atividade(models.Model):
     def __str__(self):
         return f'{self.titulo} ({self.get_tipo_display()})'
 
+    def sobrepoe(self, outra):
+        """Mesma regra de sobrepostas_a(), em Python: usada pela interface (RF10)."""
+        return self.data_hora_inicio < outra.data_hora_fim and outra.data_hora_inicio < self.data_hora_fim
+
     def cabe_no_periodo(self, data_inicio, data_fim):
         # As datas do evento estão no fuso local; os horários são gravados em UTC.
         inicio = timezone.localtime(self.data_hora_inicio).date()

@@ -1,14 +1,19 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
 from django.contrib.messages.views import SuccessMessageMixin
-from django.shortcuts import get_object_or_404, render
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.db import IntegrityError, transaction
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.functional import cached_property
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
 from eventos.forms import AtividadeForm, EventoForm
-from eventos.models import Atividade, Evento
+from eventos.models import Atividade, Evento, InscricaoAtividade, InscricaoEvento
 
 
 class EventoListView(ListView):
@@ -30,8 +35,30 @@ class EventoDetailView(DetailView):
         # O dia é calculado no fuso local: 22h em Recife já é o dia seguinte em UTC.
         for atividade in atividades:
             atividade.dia = timezone.localtime(atividade.data_hora_inicio).date()
+            atividade.minha_inscricao = None
+            atividade.conflita = False
+
+        usuario = self.request.user
+        inscricao_evento = None
+        if usuario.is_authenticated:
+            inscricao_evento = InscricaoEvento.objects.filter(evento=self.object, participante=usuario).first()
+            # Todas as atividades do participante, de qualquer evento (RN2 vale entre eventos).
+            minhas = list(
+                InscricaoAtividade.objects
+                .filter(inscricao_evento__participante=usuario)
+                .select_related('atividade')
+            )
+            por_atividade = {inscricao.atividade_id: inscricao for inscricao in minhas}
+            for atividade in atividades:
+                atividade.minha_inscricao = por_atividade.get(atividade.pk)
+                atividade.conflita = any(
+                    inscricao.atividade.sobrepoe(atividade)
+                    for inscricao in minhas if inscricao.atividade_id != atividade.pk
+                )
+
         contexto['atividades'] = atividades
-        contexto['eh_organizador'] = self.object.organizador_id == self.request.user.id
+        contexto['inscricao_evento'] = inscricao_evento
+        contexto['eh_organizador'] = self.object.organizador_id == usuario.id
         return contexto
 
 
@@ -168,3 +195,104 @@ class AtividadeDeleteView(LoginRequiredMixin, PermissionRequiredMixin, Atividade
                           SuccessMessageMixin, DeleteView):
     permission_required = 'eventos.delete_atividade'
     success_message = 'Atividade excluída.'
+
+
+# --- Inscrições e cancelamentos ---
+# Views-função: @login_required manda o anônimo para o login e @require_POST
+# recusa (405) qualquer método que não seja POST, porque todas alteram o estado.
+
+def _voltar(request, padrao):
+    """Volta para o campo 'next' do formulário, se for uma URL deste site; senão, para o padrão."""
+    destino = request.POST.get('next')
+    if destino and url_has_allowed_host_and_scheme(
+        destino, allowed_hosts={request.get_host()}, require_https=request.is_secure(),
+    ):
+        return redirect(destino)
+    return redirect(padrao)
+
+
+@login_required
+@require_POST
+def inscrever_evento(request, pk):
+    evento = get_object_or_404(Evento, pk=pk)
+
+    if InscricaoEvento.objects.filter(evento=evento, participante=request.user).exists():
+        messages.error(request, 'Você já está inscrito neste evento.')
+        return redirect('eventos:detalhe', pk=evento.pk)
+
+    inscricao = InscricaoEvento(evento=evento, participante=request.user)
+    try:
+        inscricao.full_clean()  # inscrições fechadas (InscricaoEvento.clean)
+        with transaction.atomic():
+            inscricao.save()
+    except ValidationError as erro:
+        messages.error(request, ' '.join(erro.messages))
+    except IntegrityError:
+        # Dois cliques quase simultâneos: a UniqueConstraint do banco barra a segunda.
+        messages.error(request, 'Você já está inscrito neste evento.')
+    else:
+        messages.success(request, f'Inscrição em "{evento.nome}" realizada. Agora escolha suas atividades.')
+    return redirect('eventos:detalhe', pk=evento.pk)
+
+
+@login_required
+@require_POST
+def cancelar_inscricao_evento(request, pk):
+    inscricao = get_object_or_404(InscricaoEvento.objects.select_related('evento'), pk=pk)
+    if inscricao.participante_id != request.user.id:
+        raise PermissionDenied  # ninguém cancela a inscrição de outra pessoa
+
+    evento = inscricao.evento
+    # RN5: o CASCADE de InscricaoAtividade.inscricao_evento apaga as atividades junto.
+    _, apagados = inscricao.delete()
+    atividades = apagados.get('eventos.InscricaoAtividade', 0)
+    mensagem = f'Inscrição em "{evento.nome}" cancelada.'
+    if atividades:
+        mensagem += f' Você também saiu de {atividades} atividade(s) deste evento.'
+    messages.success(request, mensagem)
+    return _voltar(request, reverse('eventos:detalhe', args=[evento.pk]))
+
+
+@login_required
+@require_POST
+def inscrever_atividade(request, pk):
+    with transaction.atomic():
+        # select_for_update trava a linha da atividade até o fim da transação: duas pessoas
+        # disputando a última vaga são atendidas uma de cada vez, e a contagem da RN1 fica certa.
+        atividade = get_object_or_404(
+            Atividade.objects.select_for_update().select_related('sala', 'evento'), pk=pk,
+        )
+        inscricao_evento = InscricaoEvento.objects.filter(
+            evento_id=atividade.evento_id, participante=request.user,
+        ).first()
+
+        if inscricao_evento is None:  # RN4
+            messages.error(request, 'Inscreva-se no evento antes de escolher atividades.')
+        elif inscricao_evento.inscricoes_atividade.filter(atividade=atividade).exists():
+            messages.error(request, 'Você já está inscrito nesta atividade.')
+        else:
+            nova = InscricaoAtividade(inscricao_evento=inscricao_evento, atividade=atividade)
+            try:
+                nova.full_clean()  # RN1, RN2 e coerência do evento (InscricaoAtividade.clean)
+            except ValidationError as erro:
+                messages.error(request, ' '.join(erro.messages))
+            else:
+                nova.save()
+                messages.success(request, f'Inscrição em "{atividade.titulo}" realizada.')
+
+    return _voltar(request, reverse('eventos:detalhe', args=[atividade.evento_id]))
+
+
+@login_required
+@require_POST
+def cancelar_inscricao_atividade(request, pk):
+    inscricao = get_object_or_404(
+        InscricaoAtividade.objects.select_related('inscricao_evento', 'atividade'), pk=pk,
+    )
+    if inscricao.inscricao_evento.participante_id != request.user.id:
+        raise PermissionDenied
+
+    atividade = inscricao.atividade
+    inscricao.delete()
+    messages.success(request, f'Você saiu de "{atividade.titulo}". A vaga foi liberada.')
+    return _voltar(request, reverse('eventos:detalhe', args=[atividade.evento_id]))

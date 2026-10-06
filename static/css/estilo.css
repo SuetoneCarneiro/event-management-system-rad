@@ -90,19 +90,24 @@ h3 { font-size: 1.05rem; margin: 0 0 .5rem; }
 .descricao { margin: 0; }
 h3.dia { margin: 1.5rem 0 .5rem; color: var(--verde-700); }
 .tabela-programacao { table-layout: fixed; min-width: 680px; }
-.tabela-programacao th:nth-child(1) { width: 15%; }
-.tabela-programacao th:nth-child(2) { width: 33%; }
-.tabela-programacao th:nth-child(3) { width: 20%; }
-.tabela-programacao th:nth-child(4) { width: 17%; }
-.tabela-programacao th:nth-child(5) { width: 15%; }
-.tabela-programacao.com-acoes { min-width: 880px; }
-.tabela-programacao.com-acoes th:nth-child(1) { width: 12%; }
-.tabela-programacao.com-acoes th:nth-child(2) { width: 25%; }
-.tabela-programacao.com-acoes th:nth-child(3) { width: 17%; }
-.tabela-programacao.com-acoes th:nth-child(4) { width: 15%; }
-.tabela-programacao.com-acoes th:nth-child(5) { width: 12%; }
-.tabela-programacao.com-acoes th:nth-child(6) { width: 19%; }
+.tabela-programacao.larga { min-width: 900px; }
+.col-horario { width: 7.5rem; }
+.col-responsavel { width: 14%; }
+.col-sala { width: 13%; }
+.col-vagas { width: 6.5rem; }
+.col-inscricao { width: 15%; }
+.col-acoes { width: 16%; }
 .tabela .acoes { gap: .35rem; }
+.linha-inscrita td { background: var(--verde-50); }
+.linha-inscrita td:first-child { box-shadow: inset 4px 0 0 var(--verde-400); }
+
+/* Inscrição no evento */
+.caixa-inscricao {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem;
+    margin-top: 1rem; padding: .85rem 1rem; border-radius: 8px;
+    background: var(--verde-50); border: 1px solid var(--borda);
+}
+.caixa-inscricao form { margin: 0; }
 .cabecalho-secao { margin: 2rem 0 0; align-items: center; }
 .cabecalho-secao h2 { margin: 0; }
 

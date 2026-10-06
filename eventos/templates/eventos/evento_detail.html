@@ -30,6 +30,32 @@
         {% endif %}
     </div>
     <p class="descricao">{{ evento.descricao|linebreaksbr }}</p>
+
+    {# Inscrição no evento: o que aparece depende de quem está vendo. #}
+    <div class="caixa-inscricao">
+        {% if inscricao_evento %}
+            <div>
+                <span class="etiqueta">✓ Você está inscrito</span>
+                <span class="texto-suave">desde {{ inscricao_evento.data|date:"d/m/Y H:i" }}</span>
+            </div>
+            <form method="post" action="{% url 'eventos:cancelar_inscricao_evento' inscricao_evento.pk %}"
+                  onsubmit="return confirm('Cancelar a inscrição no evento? Você também sairá de todas as atividades dele.');">
+                {% csrf_token %}
+                <button type="submit" class="botao-perigo">Cancelar inscrição no evento</button>
+            </form>
+        {% elif not evento.inscricoes_abertas %}
+            <span class="texto-suave">As inscrições deste evento estão encerradas.</span>
+        {% elif user.is_authenticated %}
+            <span>Inscreva-se no evento para escolher as atividades.</span>
+            <form method="post" action="{% url 'eventos:inscrever_evento' evento.pk %}">
+                {% csrf_token %}
+                <button type="submit">Inscrever-se no evento</button>
+            </form>
+        {% else %}
+            <span>Para se inscrever, entre com sua conta.</span>
+            <a class="botao" href="{% url 'login' %}?next={{ request.path|urlencode }}">Entrar para se inscrever</a>
+        {% endif %}
+    </div>
 </section>
 
 <div class="cabecalho-pagina cabecalho-secao">
@@ -43,20 +69,21 @@
 {% for dia in dias %}
     <h3 class="dia">{{ dia.grouper|date:"l, d/m/Y"|capfirst }}</h3>
     <div class="tabela-rolavel cartao sem-padding">
-        <table class="tabela tabela-programacao{% if eh_organizador %} com-acoes{% endif %}">
+        <table class="tabela tabela-programacao{% if inscricao_evento or eh_organizador %} larga{% endif %}">
             <thead>
                 <tr>
-                    <th>Horário</th>
+                    <th class="col-horario">Horário</th>
                     <th>Atividade</th>
-                    <th>Responsável</th>
-                    <th>Sala</th>
-                    <th>Vagas</th>
-                    {% if eh_organizador %}<th>Ações</th>{% endif %}
+                    <th class="col-responsavel">Responsável</th>
+                    <th class="col-sala">Sala</th>
+                    <th class="col-vagas">Vagas</th>
+                    {% if inscricao_evento %}<th class="col-inscricao">Inscrição</th>{% endif %}
+                    {% if eh_organizador %}<th class="col-acoes">Ações</th>{% endif %}
                 </tr>
             </thead>
             <tbody>
                 {% for atividade in dia.list %}
-                    <tr>
+                    <tr{% if atividade.minha_inscricao %} class="linha-inscrita"{% endif %}>
                         <td class="horario">{{ atividade.data_hora_inicio|date:"H:i" }}–{{ atividade.data_hora_fim|date:"H:i" }}</td>
                         <td>
                             <strong>{{ atividade.titulo }}</strong><br>
@@ -72,6 +99,29 @@
                                 <span class="etiqueta etiqueta-perigo">Lotada</span>
                             {% endif %}
                         </td>
+                        {% if inscricao_evento %}
+                            <td>
+                                {# RF10: o botão só aparece se a inscrição for possível. O servidor confere tudo de novo. #}
+                                {% if atividade.minha_inscricao %}
+                                    <div class="acoes">
+                                        <span class="etiqueta">✓ Inscrito</span>
+                                        <form class="em-linha" method="post" action="{% url 'eventos:cancelar_inscricao_atividade' atividade.minha_inscricao.pk %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="botao-perigo botao-pequeno">Sair</button>
+                                        </form>
+                                    </div>
+                                {% elif atividade.vagas_restantes <= 0 %}
+                                    <span class="texto-suave">Sem vagas</span>
+                                {% elif atividade.conflita %}
+                                    <span class="etiqueta etiqueta-alerta">Conflito de horário</span>
+                                {% else %}
+                                    <form class="em-linha" method="post" action="{% url 'eventos:inscrever_atividade' atividade.pk %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="botao-pequeno">Inscrever-se</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        {% endif %}
                         {% if eh_organizador %}
                             <td>
                                 <div class="acoes">
