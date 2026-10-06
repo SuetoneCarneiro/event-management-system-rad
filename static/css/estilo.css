@@ -83,6 +83,22 @@ h3 { font-size: 1.05rem; margin: 0 0 .5rem; }
 .cartao-evento .acoes { margin-top: auto; padding-top: .75rem; }
 .periodo { font-weight: 600; color: var(--verde-700); }
 
+/* Detalhe do evento */
+.destaque-evento { border-top: 4px solid var(--verde-600); }
+.destaque-evento .cabecalho-pagina { margin-bottom: .5rem; }
+.destaque-evento h1 { margin-top: .5rem; }
+.descricao { margin: 0; }
+h3.dia { margin: 1.5rem 0 .5rem; color: var(--verde-700); }
+.tabela-programacao { table-layout: fixed; min-width: 680px; }
+.tabela-programacao th:nth-child(1) { width: 15%; }
+.tabela-programacao th:nth-child(2) { width: 33%; }
+.tabela-programacao th:nth-child(3) { width: 20%; }
+.tabela-programacao th:nth-child(4) { width: 17%; }
+.tabela-programacao th:nth-child(5) { width: 15%; }
+.cartao.sem-padding { padding: 0; overflow: hidden; }
+.horario { font-weight: 700; color: var(--verde-800); white-space: nowrap; }
+.etiqueta-neutra { background: var(--verde-50); color: var(--texto-suave); border: 1px solid var(--borda); font-weight: 500; margin-top: .25rem; }
+
 /* Busca */
 .busca { display: flex; gap: .5rem; flex: 1; max-width: 380px; min-width: 240px; }
 .busca input {

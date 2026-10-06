@@ -29,6 +29,9 @@
                 {% endif %}
             </p>
             <p class="texto-suave">{{ evento.descricao|truncatewords:25 }}</p>
+            <div class="acoes">
+                <a class="botao botao-secundario botao-pequeno" href="{% url 'eventos:detalhe' evento.pk %}">Ver programação</a>
+            </div>
         </article>
     {% empty %}
         <div class="vazio">Nenhum evento cadastrado ainda.</div>

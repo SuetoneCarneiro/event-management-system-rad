@@ -1,6 +1,6 @@
 from django.urls import path
 
-from eventos.views import EventoListView
+from eventos.views import EventoDetailView, EventoListView
 
 app_name = 'eventos'
 
@@ -9,4 +9,5 @@ app_name = 'eventos'
 # (formato: <app>/<model>_list.html)
 urlpatterns = [
     path('', EventoListView.as_view(), name='lista'),
+    path('eventos/<int:pk>/', EventoDetailView.as_view(), name='detalhe'),
 ]

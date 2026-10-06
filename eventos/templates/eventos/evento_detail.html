@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block titulo %}{{ evento.nome }} · Eventos do Campus{% endblock %}
+
+{% block conteudo %}
+<p><a href="{% url 'eventos:lista' %}">← Todos os eventos</a></p>
+
+<section class="cartao destaque-evento">
+    <div class="cabecalho-pagina">
+        <div>
+            {% if evento.inscricoes_abertas %}
+                <span class="etiqueta">Inscrições abertas</span>
+            {% else %}
+                <span class="etiqueta etiqueta-perigo">Inscrições fechadas</span>
+            {% endif %}
+            <h1>{{ evento.nome }}</h1>
+            <p class="periodo">
+                {% if evento.data_inicio == evento.data_fim %}
+                    {{ evento.data_inicio|date:"d/m/Y" }}
+                {% else %}
+                    {{ evento.data_inicio|date:"d/m/Y" }} a {{ evento.data_fim|date:"d/m/Y" }}
+                {% endif %}
+            </p>
+        </div>
+    </div>
+    <p class="descricao">{{ evento.descricao|linebreaksbr }}</p>
+</section>
+
+<h2>Programação</h2>
+
+{% regroup atividades by dia as dias %}
+{% for dia in dias %}
+    <h3 class="dia">{{ dia.grouper|date:"l, d/m/Y"|capfirst }}</h3>
+    <div class="tabela-rolavel cartao sem-padding">
+        <table class="tabela tabela-programacao">
+            <thead>
+                <tr>
+                    <th>Horário</th>
+                    <th>Atividade</th>
+                    <th>Responsável</th>
+                    <th>Sala</th>
+                    <th>Vagas</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for atividade in dia.list %}
+                    <tr>
+                        <td class="horario">{{ atividade.data_hora_inicio|date:"H:i" }}–{{ atividade.data_hora_fim|date:"H:i" }}</td>
+                        <td>
+                            <strong>{{ atividade.titulo }}</strong><br>
+                            <span class="etiqueta etiqueta-neutra">{{ atividade.get_tipo_display }}</span>
+                        </td>
+                        <td>{{ atividade.responsavel }}</td>
+                        <td>{{ atividade.sala.nome }}<br><span class="texto-suave">Bloco {{ atividade.sala.bloco }}</span></td>
+                        <td>
+                            {% if atividade.vagas_restantes > 0 %}
+                                <strong>{{ atividade.vagas_restantes }}</strong>
+                                <span class="texto-suave">de {{ atividade.sala.capacidade }}</span>
+                            {% else %}
+                                <span class="etiqueta etiqueta-perigo">Lotada</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% empty %}
+    <div class="vazio">Nenhuma atividade cadastrada ainda.</div>
+{% endfor %}
+{% endblock %}
