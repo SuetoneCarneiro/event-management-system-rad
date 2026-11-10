@@ -150,6 +150,13 @@ class PortaFechadaTests(Cenario):
         self.assertEqual(resposta.status_code, 403)
         self.assertTrue(Evento.objects.filter(pk=self.semana.pk).exists())
 
+    def test_organizador_nao_altera_atividade_de_evento_de_outro(self):
+        resposta = self.api(self.bruno).patch(reverse('api:atividade-detail', args=[self.oficina.pk]),
+                                              {'titulo': 'Invadida'}, format='json')
+        self.assertEqual(resposta.status_code, 403)
+        self.oficina.refresh_from_db()
+        self.assertEqual(self.oficina.titulo, 'Oficina de Django')
+
     def test_nem_o_superusuario_altera_evento_de_outro(self):
         resposta = self.api(self.admin).patch(reverse('api:evento-detail', args=[self.semana.pk]),
                                               {'nome': 'Invadido'}, format='json')
@@ -273,6 +280,13 @@ class RegrasPelaApiTests(Cenario):
         self.assertEqual(resposta.status_code, 400)
         self.assertEqual(resposta.json(), {'non_field_errors': ['Esta atividade está lotada.']})
         self.assertEqual(self.oficina.inscricoes.count(), 2)
+
+    def test_repetir_a_mesma_atividade_responde_400_com_mensagem_propria(self):
+        self.inscrever_na_atividade(self.inscrever_no_evento(self.carla, self.semana), self.oficina)
+        resposta = self.inscrever(self.carla, self.oficina)
+        self.assertEqual(resposta.status_code, 400)
+        self.assertEqual(resposta.json(), {'non_field_errors': ['Você já está inscrito nesta atividade.']})
+        self.assertEqual(self.oficina.inscricoes.count(), 1)
 
     # RN2 — conflito na agenda do participante
     def test_rn2_atividade_em_outro_horario_responde_201(self):

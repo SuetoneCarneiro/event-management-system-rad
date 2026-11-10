@@ -189,6 +189,13 @@ class RegrasPeloSiteTests(Cenario):
         self.assertEqual(self.oficina.inscricoes.count(), 2)
         self.assertIn('Esta atividade está lotada.', mensagens(resposta))
 
+    def test_repetir_a_mesma_atividade_e_recusado_com_mensagem_propria(self):
+        self.inscrever_na_atividade(self.inscrever_no_evento(self.carla, self.semana), self.oficina)
+        self.entrar(self.carla)
+        resposta = self.inscrever(self.oficina)
+        self.assertEqual(self.oficina.inscricoes.count(), 1)
+        self.assertIn('Você já está inscrito nesta atividade.', mensagens(resposta))
+
     # RN2 — conflito na agenda do participante
     def test_rn2_atividade_em_outro_horario_e_aceita(self):
         self.inscrever_na_atividade(self.inscrever_no_evento(self.carla, self.semana), self.oficina)
@@ -348,6 +355,43 @@ class AutorizacaoTests(Cenario):
         })
         self.assertEqual(resposta.status_code, 403)
         self.assertFalse(Atividade.objects.filter(titulo='Intrusa').exists())
+
+    def test_organizador_nao_edita_atividade_de_evento_de_outro(self):
+        self.entrar(self.bruno)
+        url = reverse('eventos:atividade_editar', args=[self.oficina.pk])
+        self.assertEqual(self.client.get(url).status_code, 403)
+        resposta = self.client.post(url, {
+            'titulo': 'Invadida', 'tipo': 'PALESTRA', 'descricao': 'd', 'responsavel': 'R',
+            'sala': self.laboratorio.pk, 'data_hora_inicio': '2026-11-11T10:00', 'data_hora_fim': '2026-11-11T12:00',
+        })
+        self.assertEqual(resposta.status_code, 403)
+        self.oficina.refresh_from_db()
+        self.assertEqual(self.oficina.titulo, 'Oficina de Django')
+
+    def test_organizador_nao_exclui_atividade_de_evento_de_outro(self):
+        self.entrar(self.bruno)
+        resposta = self.client.post(reverse('eventos:atividade_excluir', args=[self.oficina.pk]))
+        self.assertEqual(resposta.status_code, 403)
+        self.assertTrue(Atividade.objects.filter(pk=self.oficina.pk).exists())
+
+    def test_dono_edita_atividade_do_proprio_evento(self):
+        self.entrar(self.ana)
+        resposta = self.client.post(reverse('eventos:atividade_editar', args=[self.oficina.pk]), {
+            'titulo': 'Oficina de Django REST', 'tipo': 'TREINAMENTO', 'descricao': 'd', 'responsavel': 'R',
+            'sala': self.laboratorio.pk, 'data_hora_inicio': '2026-11-11T10:00', 'data_hora_fim': '2026-11-11T12:00',
+        })
+        self.assertRedirects(resposta, reverse('eventos:detalhe', args=[self.semana.pk]))
+        self.oficina.refresh_from_db()
+        self.assertEqual(self.oficina.titulo, 'Oficina de Django REST')
+
+    def test_participante_que_abre_meus_eventos_recebe_403_e_nao_volta_ao_login(self):
+        self.entrar(self.carla)
+        self.assertEqual(self.client.get(reverse('eventos:meus_eventos')).status_code, 403)
+
+    def test_organizador_ve_so_os_proprios_eventos_em_meus_eventos(self):
+        self.entrar(self.bruno)
+        resposta = self.client.get(reverse('eventos:meus_eventos'))
+        self.assertQuerySetEqual(resposta.context['eventos'], [self.jornada])
 
     def test_nem_o_superusuario_edita_evento_de_outro(self):
         self.entrar(self.admin)
