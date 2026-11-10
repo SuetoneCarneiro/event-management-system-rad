@@ -37,8 +37,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'rest_framework.authtoken',
+    'drf_spectacular',
     'eventos',
     'contas',
+    'api',
 ]
 
 MIDDLEWARE = [
@@ -129,3 +133,33 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'eventos:lista'
 LOGOUT_REDIRECT_URL = 'eventos:lista'
+
+# API REST (Django REST Framework)
+REST_FRAMEWORK = {
+    # Token no cabeçalho "Authorization: Token <chave>". Vem primeiro para que a falta de
+    # credenciais responda 401 (com WWW-Authenticate), e não 403. A sessão só serve à API navegável.
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    # Fechado por padrão: o que é público declara isso explicitamente na view.
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    # Converte o ValidationError do Django (regras dos models e dos serviços) em 400 com JSON.
+    'EXCEPTION_HANDLER': 'api.excecoes.tratar_excecao',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Eventos do Campus — API',
+    'DESCRIPTION': (
+        'Programação pública dos eventos do campus e inscrições de participantes. '
+        'Endpoints de escrita exigem o cabeçalho `Authorization: Token <chave>`.'
+    ),
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
+
