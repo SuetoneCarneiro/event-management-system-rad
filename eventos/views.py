@@ -2,8 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
 from django.contrib.messages.views import SuccessMessageMixin
-from django.core.exceptions import PermissionDenied, ValidationError
-from django.db import IntegrityError, transaction
+from django.core.exceptions import ValidationError
 from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
@@ -13,6 +12,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
+from eventos import servicos
 from eventos.forms import AtividadeForm, EventoForm
 from eventos.models import Atividade, Evento, InscricaoAtividade, InscricaoEvento
 
@@ -256,21 +256,10 @@ def _voltar(request, padrao):
 @require_POST
 def inscrever_evento(request, pk):
     evento = get_object_or_404(Evento, pk=pk)
-
-    if InscricaoEvento.objects.filter(evento=evento, participante=request.user).exists():
-        messages.error(request, 'Você já está inscrito neste evento.')
-        return redirect('eventos:detalhe', pk=evento.pk)
-
-    inscricao = InscricaoEvento(evento=evento, participante=request.user)
     try:
-        inscricao.full_clean()  # inscrições fechadas (InscricaoEvento.clean)
-        with transaction.atomic():
-            inscricao.save()
+        servicos.inscrever_no_evento(request.user, evento)
     except ValidationError as erro:
         messages.error(request, ' '.join(erro.messages))
-    except IntegrityError:
-        # Dois cliques quase simultâneos: a UniqueConstraint do banco barra a segunda.
-        messages.error(request, 'Você já está inscrito neste evento.')
     else:
         messages.success(request, f'Inscrição em "{evento.nome}" realizada. Agora escolha suas atividades.')
     return redirect('eventos:detalhe', pk=evento.pk)
@@ -280,13 +269,8 @@ def inscrever_evento(request, pk):
 @require_POST
 def cancelar_inscricao_evento(request, pk):
     inscricao = get_object_or_404(InscricaoEvento.objects.select_related('evento'), pk=pk)
-    if inscricao.participante_id != request.user.id:
-        raise PermissionDenied  # ninguém cancela a inscrição de outra pessoa
-
     evento = inscricao.evento
-    # RN5: o CASCADE de InscricaoAtividade.inscricao_evento apaga as atividades junto.
-    _, apagados = inscricao.delete()
-    atividades = apagados.get('eventos.InscricaoAtividade', 0)
+    atividades = servicos.cancelar_inscricao_evento(request.user, inscricao)  # PermissionDenied -> 403
     mensagem = f'Inscrição em "{evento.nome}" cancelada.'
     if atividades:
         mensagem += f' Você também saiu de {atividades} atividade(s) deste evento.'
@@ -297,30 +281,13 @@ def cancelar_inscricao_evento(request, pk):
 @login_required
 @require_POST
 def inscrever_atividade(request, pk):
-    with transaction.atomic():
-        # select_for_update trava a linha da atividade até o fim da transação: duas pessoas
-        # disputando a última vaga são atendidas uma de cada vez, e a contagem da RN1 fica certa.
-        atividade = get_object_or_404(
-            Atividade.objects.select_for_update().select_related('sala', 'evento'), pk=pk,
-        )
-        inscricao_evento = InscricaoEvento.objects.filter(
-            evento_id=atividade.evento_id, participante=request.user,
-        ).first()
-
-        if inscricao_evento is None:  # RN4
-            messages.error(request, 'Inscreva-se no evento antes de escolher atividades.')
-        elif inscricao_evento.inscricoes_atividade.filter(atividade=atividade).exists():
-            messages.error(request, 'Você já está inscrito nesta atividade.')
-        else:
-            nova = InscricaoAtividade(inscricao_evento=inscricao_evento, atividade=atividade)
-            try:
-                nova.full_clean()  # RN1, RN2 e coerência do evento (InscricaoAtividade.clean)
-            except ValidationError as erro:
-                messages.error(request, ' '.join(erro.messages))
-            else:
-                nova.save()
-                messages.success(request, f'Inscrição em "{atividade.titulo}" realizada.')
-
+    atividade = get_object_or_404(Atividade, pk=pk)
+    try:
+        servicos.inscrever_na_atividade(request.user, atividade)
+    except ValidationError as erro:
+        messages.error(request, ' '.join(erro.messages))
+    else:
+        messages.success(request, f'Inscrição em "{atividade.titulo}" realizada.')
     return _voltar(request, reverse('eventos:detalhe', args=[atividade.evento_id]))
 
 
@@ -330,10 +297,7 @@ def cancelar_inscricao_atividade(request, pk):
     inscricao = get_object_or_404(
         InscricaoAtividade.objects.select_related('inscricao_evento', 'atividade'), pk=pk,
     )
-    if inscricao.inscricao_evento.participante_id != request.user.id:
-        raise PermissionDenied
-
     atividade = inscricao.atividade
-    inscricao.delete()
+    servicos.cancelar_inscricao_atividade(request.user, inscricao)  # PermissionDenied -> 403
     messages.success(request, f'Você saiu de "{atividade.titulo}". A vaga foi liberada.')
     return _voltar(request, reverse('eventos:detalhe', args=[atividade.evento_id]))
