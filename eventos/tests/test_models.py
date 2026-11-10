@@ -5,6 +5,7 @@ e serviços) e a API (via serializer e serviços) chamam.
 """
 from datetime import date
 
+from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import ValidationError
 
 from eventos.models import Atividade, Evento, InscricaoAtividade, InscricaoEvento, Sala
@@ -50,6 +51,12 @@ class ValidacaoEventoTests(Cenario):
         with self.assertRaises(ValidationError) as erro:
             self.evento(nome='').full_clean()
         self.assertIn('nome', erro.exception.message_dict)
+
+    def test_so_o_organizador_e_dono_do_evento(self):
+        self.assertTrue(self.semana.organizado_por(self.ana))
+        for usuario in [self.bruno, self.carla, self.admin, AnonymousUser()]:
+            with self.subTest(str(usuario)):
+                self.assertFalse(self.semana.organizado_por(usuario))
 
     def test_encurtar_periodo_deixando_atividade_de_fora_e_recusado(self):
         self.semana.data_inicio = date(2026, 11, 12)  # a Oficina é em 11/11

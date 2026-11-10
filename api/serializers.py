@@ -61,7 +61,7 @@ class AtividadeSerializer(ValidacaoDoModelMixin, serializers.ModelSerializer):
     def validate_evento(self, evento):
         if self.instance and evento != self.instance.evento:
             raise serializers.ValidationError('Uma atividade não pode ser movida para outro evento.')
-        if evento.organizador_id != self.context['request'].user.id:
+        if not evento.organizado_por(self.context['request'].user):
             raise PermissionDenied('Somente o organizador do evento pode cadastrar atividades nele.')
         return evento
 

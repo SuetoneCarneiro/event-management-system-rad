@@ -14,4 +14,4 @@ class EhOrganizadorDoEventoOuSomenteLeitura(BasePermission):
         if request.method in SAFE_METHODS:
             return True
         evento = obj if isinstance(obj, Evento) else obj.evento
-        return evento.organizador_id == request.user.id
+        return evento.organizado_por(request.user)

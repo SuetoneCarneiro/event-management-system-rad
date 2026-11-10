@@ -48,6 +48,13 @@ class Evento(models.Model):
     def __str__(self):
         return self.nome
 
+    def organizado_por(self, usuario):
+        """Posse do evento: a única definição, usada pelo site e pela API.
+
+        Não consulta is_superuser: nem o administrador altera evento alheio.
+        """
+        return self.organizador_id is not None and self.organizador_id == usuario.pk
+
     def clean(self):
         # Ao editar o período, nenhuma atividade já cadastrada pode ficar de fora.
         if self.pk and self.data_inicio and self.data_fim:

@@ -59,7 +59,7 @@ class EventoDetailView(DetailView):
 
         contexto['atividades'] = atividades
         contexto['inscricao_evento'] = inscricao_evento
-        contexto['eh_organizador'] = self.object.organizador_id == usuario.id
+        contexto['eh_organizador'] = self.object.organizado_por(usuario)
         return contexto
 
 
@@ -99,7 +99,7 @@ class OrganizadorDoEventoMixin(UserPassesTestMixin):
         raise NotImplementedError
 
     def test_func(self):
-        return self.get_evento().organizador_id == self.request.user.id
+        return self.get_evento().organizado_por(self.request.user)
 
 
 class EventoCreateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):
