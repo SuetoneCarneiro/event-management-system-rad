@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 
-from eventos.models import Atividade, Evento, Sala
+from eventos.models import Atividade, Evento, InscricaoAtividade, InscricaoEvento, Sala
 
 from .excecoes import como_erro_da_api
 
@@ -81,3 +81,46 @@ class EventoProgramacaoSerializer(EventoSerializer):
     class Meta(EventoSerializer.Meta):
         fields = EventoSerializer.Meta.fields + ['atividades']
 
+
+class InscricaoEventoSerializer(serializers.ModelSerializer):
+    """O participante não é campo: vem de request.user, nunca do JSON."""
+    evento_nome = serializers.CharField(source='evento.nome', read_only=True)
+
+    class Meta:
+        model = InscricaoEvento
+        fields = ['id', 'evento', 'evento_nome', 'data']
+        read_only_fields = ['data']
+        # A unicidade (evento, participante) é verificada pelo serviço, que conhece o participante.
+        validators = []
+
+
+class InscricaoAtividadeSerializer(serializers.ModelSerializer):
+    atividade_titulo = serializers.CharField(source='atividade.titulo', read_only=True)
+
+    class Meta:
+        model = InscricaoAtividade
+        fields = ['id', 'atividade', 'atividade_titulo', 'data_hora_inscricao']
+        read_only_fields = ['data_hora_inscricao']
+        validators = []  # duplicidade e demais regras ficam com o serviço e o model
+
+
+class AtividadeDaAgendaSerializer(serializers.ModelSerializer):
+    evento_nome = serializers.CharField(source='evento.nome', read_only=True)
+    sala_nome = serializers.CharField(source='sala.nome', read_only=True)
+    sala_bloco = serializers.CharField(source='sala.bloco', read_only=True)
+
+    class Meta:
+        model = Atividade
+        fields = [
+            'id', 'titulo', 'tipo', 'evento', 'evento_nome', 'sala_nome', 'sala_bloco',
+            'data_hora_inicio', 'data_hora_fim',
+        ]
+
+
+class AgendaSerializer(serializers.ModelSerializer):
+    """Uma linha da agenda: o id é o da inscrição (é ele que se usa para cancelar)."""
+    atividade = AtividadeDaAgendaSerializer(read_only=True)
+
+    class Meta:
+        model = InscricaoAtividade
+        fields = ['id', 'atividade', 'data_hora_inscricao']

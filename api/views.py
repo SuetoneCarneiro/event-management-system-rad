@@ -1,12 +1,19 @@
 from django.db.models import Prefetch
+from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework import filters, viewsets
-from rest_framework.permissions import AllowAny, DjangoModelPermissionsOrAnonReadOnly
+from rest_framework import filters, status, viewsets
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, DjangoModelPermissionsOrAnonReadOnly, IsAuthenticated
+from rest_framework.response import Response
 
-from eventos.models import Atividade, Evento, Sala
+from eventos import servicos
+from eventos.models import Atividade, Evento, InscricaoAtividade, InscricaoEvento, Sala
 
 from .permissions import EhOrganizadorDoEventoOuSomenteLeitura
-from .serializers import AtividadeSerializer, EventoProgramacaoSerializer, EventoSerializer, SalaSerializer
+from .serializers import (
+    AgendaSerializer, AtividadeSerializer, EventoProgramacaoSerializer, EventoSerializer,
+    InscricaoAtividadeSerializer, InscricaoEventoSerializer, SalaSerializer,
+)
 
 # --- Recursos com CRUD completo: ViewSet + router ---
 # Permissões em duas camadas, como no site:
@@ -62,3 +69,66 @@ class SalaViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = SalaSerializer
     permission_classes = [AllowAny]
 
+
+# --- Ações do participante: views-função com @api_view ---
+# Não são CRUD de um recurso: são operações (inscrever, cancelar, ver a agenda) que delegam
+# para eventos/servicos.py, o mesmo código usado pelo site. O participante sempre é request.user.
+
+@extend_schema(request=InscricaoEventoSerializer, responses=InscricaoEventoSerializer)
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def inscricoes_evento(request):
+    """GET: minhas inscrições em eventos. POST: inscrever-me em um evento."""
+    if request.method == 'GET':
+        inscricoes = InscricaoEvento.objects.filter(participante=request.user).select_related('evento')
+        return Response(InscricaoEventoSerializer(inscricoes, many=True).data)
+
+    serializer = InscricaoEventoSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    inscricao = servicos.inscrever_no_evento(request.user, serializer.validated_data['evento'])
+    return Response(InscricaoEventoSerializer(inscricao).data, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(responses={204: None})
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def cancelar_inscricao_evento(request, pk):
+    """Cancela minha inscrição no evento e, junto, as inscrições nas atividades dele."""
+    inscricao = get_object_or_404(InscricaoEvento, pk=pk)
+    servicos.cancelar_inscricao_evento(request.user, inscricao)  # PermissionDenied -> 403
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(request=InscricaoAtividadeSerializer, responses={201: InscricaoAtividadeSerializer})
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def inscrever_atividade(request):
+    """Inscreve-me em uma atividade de um evento em que já estou inscrito."""
+    serializer = InscricaoAtividadeSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    inscricao = servicos.inscrever_na_atividade(request.user, serializer.validated_data['atividade'])
+    return Response(InscricaoAtividadeSerializer(inscricao).data, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(responses={204: None})
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def cancelar_inscricao_atividade(request, pk):
+    """Cancela minha inscrição em uma atividade; a vaga volta imediatamente."""
+    inscricao = get_object_or_404(InscricaoAtividade.objects.select_related('inscricao_evento'), pk=pk)
+    servicos.cancelar_inscricao_atividade(request.user, inscricao)  # PermissionDenied -> 403
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(responses=AgendaSerializer(many=True))
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def agenda(request):
+    """Atividades em que estou inscrito, de todos os eventos, em ordem cronológica."""
+    inscricoes = (
+        InscricaoAtividade.objects
+        .filter(inscricao_evento__participante=request.user)
+        .select_related('atividade__evento', 'atividade__sala')
+        .order_by('atividade__data_hora_inicio')
+    )
+    return Response(AgendaSerializer(inscricoes, many=True).data)
