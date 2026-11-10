@@ -4,6 +4,7 @@ from django.contrib.auth.models import Group, User
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
+from rest_framework.authtoken.models import Token
 
 from eventos.models import Atividade, Evento, InscricaoAtividade, InscricaoEvento, Sala
 from eventos.signals import GRUPO_ORGANIZADORES
@@ -18,6 +19,16 @@ CONTAS = [
     ('carla', SENHA_PADRAO, 'Carla', 'Participante', 'participante'),  # conta 4: inscreve-se
     ('diego', SENHA_PADRAO, 'Diego', 'Participante', 'participante'),  # conta 5: ocupa a última vaga
 ]
+
+# Tokens fixos da API, para que o README continue valendo depois de recriar o banco.
+# São credenciais de teste deste projeto, publicadas de propósito para a avaliação.
+TOKENS = {
+    'admin': '39e78f2a6f30acf8ddb4c3baa94f41c1c0260b91',
+    'ana': 'b419d7bd3ba08ac9e3ce2d7725249f0b48fcd0c7',
+    'bruno': 'c83b2c2c0456d817dc37f1b5a199e46474c541a9',
+    'carla': '275a7a694f0e0d4f078a807f4eb3f0b662be327c',
+    'diego': '0514e71483b5d588d3925380bc814c16ccd141d5',
+}
 
 
 def dt(dia, mes, hora, minuto=0):
@@ -69,6 +80,7 @@ class Command(BaseCommand):
                 self.stdout.write(f'Conta já existia, senha mantida: {username}')
             if papel == 'organizador':
                 usuario.groups.add(organizadores)
+            Token.objects.get_or_create(user=usuario, defaults={'key': TOKENS[username]})
             usuarios[username] = usuario
         return usuarios
 
